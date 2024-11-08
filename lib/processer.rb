@@ -9,11 +9,8 @@ class  Processer
   def call
     output_array = []
 
-    # split skills
-    # '1, 2, 3' -> ['1', '2', '3']
-    jobs.map { |job| job["required_skills"] = job["required_skills"].split(', ').uniq }
-    job_seekers.map { |job_seekers| job_seekers["skills"] = job_seekers["skills"].split(', ').uniq }
-
+    split_skills
+  
     job_seekers.each do |job_seeker|
       output_array += process_jobseeker(job_seeker)
     end
@@ -22,6 +19,25 @@ class  Processer
   end
 
   private
+
+  def split_skills
+    # '1, 2, 3' -> ['1', '2', '3']
+    jobs.map do |job|
+      begin
+        job["required_skills"] = job["required_skills"].split(', ').uniq
+      rescue => e
+        raise StandardError, "Error processing job: #{job}, #{e}"
+      end
+    end
+
+    job_seekers.map do |job_seeker|
+      begin
+        job_seeker["skills"] = job_seeker["skills"].split(', ').uniq
+      rescue => e
+        raise StandardError, "Error processing jobseeker: #{job_seeker}, #{e}"
+      end
+    end
+  end
 
   def process_jobseeker(job_seeker)
     job_seeker_output = []

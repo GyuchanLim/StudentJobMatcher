@@ -1,12 +1,14 @@
-# StudentJobMatcher
+## Requirements
+- Ruby 3.1.2
+- Bundler
 
-How to run code
-- Navigate to root project directory
-  - put **jobseekers.csv** and **jobs.csv** into **input** folder
-  - in terminal -> `ruby main.rb`
+## Assumption
+- `id` column for both csvs will always be an integer - no quotation around them in example csvs
 
-- Otherwise...
-  `ruby main.rb "jobseeker_csv_path" "jobs_csv_path"`
+## How to run
+- `ruby main.rb` will run with default set of data
+- `ruby main.rb "jobseeker_csv_path" "jobs_csv_path"` will run with any set of data given
+- Result will be stored as `job_match_result.csv` in root project directory
 
-Assumption made
-- There won't be duplicate jobseeker or jobs records
+## Testing
+- `bundle exec rspec`

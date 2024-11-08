@@ -49,6 +49,30 @@ RSpec.describe Processer do
     end
   end
 
+  context "when job seeker skill is empty" do
+    it "skips person" do
+      jobseekers.first["skills"] = ""
+
+      expect(subject.call).to eq expected_output[3..]
+    end
+  end
+
+  context "when invalid seeker data" do
+    it "skips person" do
+      jobseekers.first["skills"] = nil
+
+      expect{ subject.call }.to raise_error(StandardError, /Error processing jobseeker/)
+    end
+  end
+
+  context "when invalid job data" do
+    it "skips job" do
+      jobs.first["required_skills"] = nil
+
+      expect{ subject.call }.to raise_error(StandardError, /Error processing job/)
+    end
+  end
+
   it "gives expected output" do
     expect(subject.call).to eq expected_output
   end
