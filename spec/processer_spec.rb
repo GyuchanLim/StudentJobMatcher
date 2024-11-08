@@ -1,72 +1,55 @@
 require 'processer'
 require 'csv'
-require 'byebug'
 
 RSpec.describe Processer do
-  let(:jobseekers) do
-    <<~CSV
-      id,name,skills
-      1,A,"s1, s2, s3"
-      2,B,"s1, s2"
-      3,C,"s1"
-    CSV
-  end
-
-  let(:jobs) do
-    <<~CSV
-      id,title,required_skills
-      1,X,"s1, s2"
-      2,Y,"s2"
-      3,Z,"s2, s1"
-    CSV
-  end
-
+  let(:jobseekers) { CSV.read("spec/fixtures/mock_jobseekers.csv", headers: true) }
+  let(:jobs) { CSV.read("spec/fixtures/mock_jobs.csv", headers: true) }
   let(:expected_output) do
     [
-      [1, "A", 1, "X", 2, 100],
-      [1, "A", 2, "Y", 1, 100],
-      [1, "A", 3, "Z", 2, 100],
-      [2, "B", 1, "X", 2, 100],
-      [2, "B", 2, "Y", 1, 100],
-      [2, "B", 3, "Z", 2, 100],
-      [3, "C", 1, "X", 1, 50],
-      [3, "C", 3, "Z", 1, 50]
+      [1, "Aable", 1, "X", 3, 100],
+      [1, "Aable", 2, "Y", 2, 100],
+      [1, "Aable", 3, "Z", 1, 100],
+      [2, "Barry", 2, "Y", 2, 100],
+      [2, "Barry", 3, "Z", 1, 100],
+      [2, "Barry", 1, "X", 2, 67],
+      [3, "Cody", 3, "Z", 1, 100],
+      [3, "Cody", 2, "Y", 1, 50],
+      [3, "Cody", 1, "X", 1, 33]
     ]
   end
 
-  context "happy path" do
+  let(:subject) { described_class.new(jobseekers,jobs) }
+
+  context "when not in order by id" do
     it "gives expected output" do
-      expect(described_class.new(CSV.parse(jobseekers, headers: true), CSV.parse(jobs, headers: true)).start).to eq expected_output
+      jobseekers[0], jobseekers[2] = jobseekers[2], jobseekers[0]
+
+
+      # assert jobseeker is in reverse order
+      expect(subject.job_seekers.map{ |seeker| seeker["id"] }).to eq ["3", "2", "1"]
+      expect(subject.call).to eq expected_output
     end
   end
 
-  context "when order of jobseekers are random" do
-    let(:jobseekers) do
-      <<~CSV
-        id,name,skills
-        2,B,"s1, s2"
-        1,A,"s1, s2, s3"
-        3,C,"s1"
-      CSV
+  context "when skills contain duplicates" do
+    it "removes the duplicates and puts into an array" do
+      jobseekers.first["skills"] = "A, B, C, C, C"
+      jobs.first["required_skills"] = "A, A, A, B, C"
+
+      expect { subject.call }.to change {
+        subject.job_seekers.first["skills"]
+        }.from("A, B, C, C, C").to(["A", "B", "C"])
+        .and change {
+          subject.jobs.first["required_skills"]
+        }.from("A, A, A, B, C").to(["A", "B", "C"])
     end
 
-    it "still gives expected output" do
-      expect(described_class.new(CSV.parse(jobseekers, headers: true), CSV.parse(jobs, headers: true)).start).to eq expected_output
+    it "gives expected output" do
+      expect(subject.call).to eq expected_output
     end
   end
 
-  context "when order of jobs are random" do
-    let(:jobs) do
-      <<~CSV
-        id,title,required_skills
-        3,Z,"s2, s1"
-        1,X,"s1, s2"
-        2,Y,"s2"
-      CSV
-    end
-
-    it "still gives expected output" do
-      expect(described_class.new(CSV.parse(jobseekers, headers: true), CSV.parse(jobs, headers: true)).start).to eq expected_output
-    end
+  it "gives expected output" do
+    expect(subject.call).to eq expected_output
   end
 end

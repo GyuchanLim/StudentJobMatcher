@@ -1,44 +1,55 @@
 class  Processer
-  attr_reader :job_seekers_csv, :jobs_csv
+  attr_reader :job_seekers, :jobs
 
   def initialize(job_seekers_csv, jobs_csv)
-    @job_seekers_csv = job_seekers_csv
-    @jobs_csv = jobs_csv
+    @job_seekers = job_seekers_csv.map(&:to_hash)
+    @jobs = jobs_csv.map(&:to_hash)
   end
 
-  def start
-    container = []
+  def call
+    output_array = []
 
-    job_seekers_csv.each do |jobseeker|
-      container += (process_jobseeker(jobseeker))
+    # split skills
+    # '1, 2, 3' -> ['1', '2', '3']
+    jobs.map { |job| job["required_skills"] = job["required_skills"].split(', ').uniq }
+    job_seekers.map { |job_seekers| job_seekers["skills"] = job_seekers["skills"].split(', ').uniq }
+
+    job_seekers.each do |job_seeker|
+      output_array += process_jobseeker(job_seeker)
     end
 
-    container.sort_by { |output_row| [output_row[0], output_row[5], output_row[3]] }
+    output_array.sort_by { |output_row| [output_row[0], -output_row[5], output_row[3]] }
   end
 
-  def process_jobseeker(jobseeker)
-    jobseeker_output = []
+  private
 
-    jobs_csv.each do |job|
-      seeker_skills = jobseeker["skills"].split(', ')
-      required_skills = job["required_skills"].split(', ')
+  def process_jobseeker(job_seeker)
+    job_seeker_output = []
 
-      matched_skills = match_skills(seeker_skills, required_skills)
+    jobs.each do |job|
+      matching_skills = match_skills(job_seeker["skills"], job["required_skills"])
 
-      unless matched_skills.nil?
-        jobseeker_output.append([jobseeker["id"].to_i, jobseeker["name"], job["id"].to_i, job["title"], matched_skills.count, format_matched_percentage(matched_skills, required_skills) ])
+      unless matching_skills.nil?
+        job_seeker_output << [
+          job_seeker["id"].to_i,
+          job_seeker["name"],
+          job["id"].to_i,
+          job["title"],
+          matching_skills.count,
+          matching_percentage(matching_skills, job["required_skills"])
+        ]
       end
     end
 
-    jobseeker_output
+    job_seeker_output
   end
 
   def match_skills(seeker_skills, required_skills)
-    matched_skills = seeker_skills.intersection(required_skills)
-    matched_skills.empty? ? nil : matched_skills
+    matching_skills = seeker_skills.intersection(required_skills)
+    matching_skills.empty? ? nil : matching_skills
   end
 
-  def format_matched_percentage(matched_skills, required_skills)
-    ((matched_skills.count.to_f/required_skills.count)*100).round
+  def matching_percentage(matching_skills, required_skills)\
+    ((matching_skills.count.to_f/required_skills.count)*100).round
   end
 end
