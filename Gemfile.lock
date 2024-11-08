@@ -18,7 +18,8 @@ GEM
     rspec-support (3.13.1)
 
 PLATFORMS
-  x86_64-linux-gnu
+  arm64-darwin-23
+  x86_64-linux
 
 DEPENDENCIES
   byebug
